@@ -1,0 +1,73 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== AUTH =====
+model User {
+  id         String       @id @default(cuid())
+  nama       String
+  email      String       @unique
+  password   String
+  role       Role         @default(OWNER)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  transaksi  Transaksi[]
+  modal      Modal[]
+}
+
+enum Role {
+  OWNER
+  KASIR
+}
+
+// ===== MODAL AWAL =====
+model Modal {
+  id         String     @id @default(cuid())
+  nama       String     // "Kompor gas", "Stok bahan baku awal"
+  jumlah     Decimal    @db.Decimal(15, 2)
+  jenisModal JenisModal
+  tanggal    DateTime   @default(now())
+  keterangan String?
+  userId     String
+  user       User       @relation(fields: [userId], references: [id])
+  createdAt  DateTime   @default(now())
+}
+
+enum JenisModal {
+  PERALATAN
+  BAHAN_BAKU
+  LAINNYA
+}
+
+// ===== TRANSAKSI HARIAN =====
+model Transaksi {
+  id         String         @id @default(cuid())
+  tanggal    DateTime
+  keterangan String
+  jumlah     Decimal        @db.Decimal(15, 2)
+  jenis      JenisTransaksi // MASUK atau KELUAR
+  kategori   Kategori       // untuk breakdown pengeluaran
+  userId     String
+  user       User           @relation(fields: [userId], references: [id])
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+}
+
+enum JenisTransaksi {
+  MASUK    // pendapatan dari jualan
+  KELUAR   // semua jenis pengeluaran
+}
+
+enum Kategori {
+  PENJUALAN    // uang masuk dari jualan
+  BAHAN_BAKU   // belanja bahan harian
+  OPERASIONAL  // listrik, gas, sewa, gaji
+  LAINNYA      // pengeluaran lain-lain
+}
